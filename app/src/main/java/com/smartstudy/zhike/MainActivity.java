@@ -1,6 +1,8 @@
 package com.smartstudy.zhike;
 
 import android.Manifest;
+import android.content.Context;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
@@ -32,7 +34,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId()) {
             case R.id.weChat:
                 ZkPayPlatform.with(this)
-                        .orderId("20171236316862").setDebug(true)
+                        .orderId("20171242104638").setDebug(true)
+                        .pid("nmv99rf5eg").appVersion(getVersionName(this))
                         .token("0nBRuNTHta96XEOHAT1pobV9aY6pmn6F")
                         .payway(PayWay.WXPay).productsName("托福100天")
                         .requestPay(new OnPayListener() {
@@ -57,7 +60,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.aliPay:
                 ZkPayPlatform.with(this)
-                        .orderId("20171203468754").setDebug(true)
+                        .orderId("20171242104638").setDebug(true)
+                        .pid("nmv99rf5eg").appVersion(getVersionName(this))
                         .token("0nBRuNTHta96XEOHAT1pobV9aY6pmn6F")
                         .payway(PayWay.ALiPay).productsName("托福100天")
                         .requestPay(new OnPayListener() {
@@ -83,5 +87,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             default:
                 break;
         }
+    }
+
+    /**
+     * [获取应用程序版本名称信息]
+     *
+     * @return 当前应用的版本名称
+     */
+    public static String getVersionName(Context context) {
+        try {
+            PackageManager packageManager = context.getPackageManager();
+            PackageInfo packageInfo = packageManager.getPackageInfo(
+                    context.getPackageName(), 0);
+            return packageInfo.versionName;
+
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

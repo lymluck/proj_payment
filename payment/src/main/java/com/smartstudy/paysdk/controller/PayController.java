@@ -12,6 +12,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alipay.sdk.app.PayTask;
 import com.smartstudy.paysdk.bean.AliPayBean;
+import com.smartstudy.paysdk.bean.ParamsBean;
 import com.smartstudy.paysdk.bean.WXPayBean;
 import com.smartstudy.paysdk.callback.Callback;
 import com.smartstudy.paysdk.callback.OnPayListener;
@@ -44,10 +45,13 @@ public class PayController {
     private String mOrderId;
     private String mToken;
     private String mProductsName;
+    private String pid;
+    private String appVersion;
     private PayWay mPayWay;
     private String mSerial;
     private IWXAPI mWXapi;
     private boolean debug;
+    private ParamsBean paramsBean;
 
     public static PayController mInstance;
 
@@ -96,6 +100,16 @@ public class PayController {
         return this;
     }
 
+    public PayController pid(String pid) {
+        this.pid = pid;
+        return this;
+    }
+
+    public PayController appVersion(String appVersion) {
+        this.appVersion = appVersion;
+        return this;
+    }
+
     /**
      * 支付
      *
@@ -103,7 +117,8 @@ public class PayController {
      */
     public void requestPay(final OnPayListener onPayListener) {
         checkArgs();
-        PayModel.requestPay(mPayWay, mOrderId, mToken, mProductsName, new Callback<String>() {
+        paramsBean = new ParamsBean(mOrderId, mToken, mProductsName, pid, appVersion);
+        PayModel.requestPay(mPayWay, paramsBean, new Callback<String>() {
             @Override
             public void onErr(String msg) {
                 ToastUtils.shortToast(mContext, msg);
@@ -143,7 +158,7 @@ public class PayController {
      * @param callback
      */
     private void verifyPayResult(final ServerResultCallback callback) {
-        PayModel.verifyPayResult(mOrderId, mToken, mSerial, new Callback<String>() {
+        PayModel.verifyPayResult(paramsBean, mSerial, new Callback<String>() {
             @Override
             public void onErr(String msg) {
                 ToastUtils.shortToast(mContext, msg);
@@ -311,6 +326,10 @@ public class PayController {
             throw new IllegalArgumentException("Please specify the \"orderId\" of payment!");
         } else if (TextUtils.isEmpty(mToken)) {
             throw new IllegalArgumentException("Please specify the \"token\" of payment!");
+        } else if (TextUtils.isEmpty(pid)) {
+            throw new IllegalArgumentException("Please specify the \"pid\" of payment!");
+        } else if (TextUtils.isEmpty(appVersion)) {
+            throw new IllegalArgumentException("Please specify the \"appVersion\" of payment!");
         }
     }
 }
