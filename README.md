@@ -68,7 +68,7 @@
                  }
             });
   参数说明：<br /><br />
-     1. orderId，token，payway为必须参数，sdk有做参数校验，其它的参数非必传;<br /><br />
+     1. orderId，token，payway为必须参数，sdk有做参数校验，其它的参数非必传;<br />
      2. debug模式表示切换到服务端的测试环境地址
     
 ###  技术支持
