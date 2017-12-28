@@ -32,7 +32,7 @@
  * Gradle
   
         dependencies {
-             compile 'com.smartstudy:payment:1.0.1'
+             compile 'com.smartstudy:payment:1.0.2'
         }
         
  * Maven
@@ -40,16 +40,17 @@
         <dependency>
           <groupId>com.smartstudy</groupId>
           <artifactId>payment</artifactId>
-          <version>1.0.1</version>
+          <version>1.0.2</version>
           <type>pom</type>
         </dependency>
         
 ####  3.支付：
   
         ZkPayPlatform.with(this)
-            .orderId("20171279991219").setDebug(true)
+            .orderId("20171242104638").setDebug(true)
+            .pid("nmv99rf5eg").appVersion(getVersionName(this))
             .token("0nBRuNTHta96XEOHAT1pobV9aY6pmn6F")
-            .payway(PayWay.WXPay).productsName("托福100天")
+            .payway(PayWay.ALiPay).productsName("托福100天")
             .requestPay(new OnPayListener() {
                  @Override
                  public void onPaySuccess(PayWay way) {
