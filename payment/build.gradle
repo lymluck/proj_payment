@@ -4,11 +4,10 @@ apply plugin: 'com.novoda.bintray-release'
 def sdkVs = "1.0.4"
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion "23.0.1"
+    compileSdkVersion 26
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 23
+        targetSdkVersion 26
 
     }
 
@@ -28,19 +27,19 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.squareup.okhttp3:okhttp:+'
-    compile 'com.android.support:appcompat-v7:23.0.1'
+    compile 'com.squareup.okhttp3:okhttp:3.+'
+    compile 'com.android.support:appcompat-v7:+'
     compile 'com.alibaba:fastjson:1.1.67.android'
     compile 'com.tencent.mm.opensdk:wechat-sdk-android-without-mta:+'
     compile files('libs/alipaySdk-20170922.jar')
 }
 
-//添加
+//add
 publish {
-    userOrg = 'lymluck'//bintray.com用户名
-    groupId = 'com.smartstudy'//jcenter上的路径
-    artifactId = 'payment'//项目名称
-    publishVersion = "$sdkVs"//版本号
-    desc = 'Oh hi, this is a nice description for a project, right?'//描述，不重要
-    website = 'https://github.com/lymluck/payment'//网站，不重要；尽量模拟github上的地址，例如我这样的；当然你有地址最好了
+    userOrg = 'lymluck'//bintray.com username
+    groupId = 'com.smartstudy'//jcenter
+    artifactId = 'payment'//project name
+    publishVersion = "$sdkVs"//version
+    desc = 'Oh hi, this is a nice description for a project, right?'//description
+    website = 'https://github.com/lymluck/payment'//webstie
 }

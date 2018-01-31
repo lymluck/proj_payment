@@ -16,9 +16,7 @@ import static com.smartstudy.paysdk.util.ConstantUtils.WECHAT_PAY_RESULT_ACTION;
 import static com.smartstudy.paysdk.util.ConstantUtils.WECHAT_PAY_RESULT_EXTRA;
 
 /**
- *
  * @author caibing.zhang
- * @date 2018/1/29
  */
 public abstract class AbstractPaymentActivity extends Activity implements IWXAPIEventHandler {
 
