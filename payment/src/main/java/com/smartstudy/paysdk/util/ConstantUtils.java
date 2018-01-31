@@ -28,6 +28,6 @@ public class ConstantUtils {
 
     /*********获取api接口url***********/
     public static String getUrl(boolean debug, String url) {
-        return debug ? "http://api.staging.smartstudy.com/sdk" + url : "api.smartstudy.com/sdk" + url;
+        return debug ? "http://api.staging.smartstudy.com/sdk" + url : "http://api.smartstudy.com/sdk" + url;
     }
 }
