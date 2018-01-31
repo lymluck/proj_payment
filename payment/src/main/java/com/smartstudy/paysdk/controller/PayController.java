@@ -50,7 +50,7 @@ public class PayController {
     private PayWay mPayWay;
     private String mSerial;
     private IWXAPI mWXapi;
-    private boolean debug;
+    private String env;
     private ParamsBean paramsBean;
 
     public static PayController mInstance;
@@ -62,12 +62,12 @@ public class PayController {
         return mInstance;
     }
 
-    public boolean isDebug() {
-        return debug;
+    public String env() {
+        return env;
     }
 
-    public PayController setDebug(boolean debug) {
-        this.debug = debug;
+    public PayController setEnv(String env) {
+        this.env = env;
         return this;
     }
 

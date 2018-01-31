@@ -26,11 +26,11 @@ public class PayModel {
                 String url = "";
                 switch (payWay) {
                     case WXPay:
-                        url = ConstantUtils.getUrl(PayController.getInstance().isDebug(),
+                        url = ConstantUtils.getUrl(PayController.getInstance().env(),
                                 String.format(ConstantUtils.URL_WX_PAY, paramsBean.getOrderId()));
                         break;
                     case ALiPay:
-                        url = ConstantUtils.getUrl(PayController.getInstance().isDebug(),
+                        url = ConstantUtils.getUrl(PayController.getInstance().env(),
                                 String.format(ConstantUtils.URL_ALI_PAY, paramsBean.getOrderId()));
                         break;
                     default:
@@ -58,7 +58,7 @@ public class PayModel {
         RequestServer.getInstance().doGet(new RequestConfig<String>() {
             @Override
             public String getUrl() {
-                return ConstantUtils.getUrl(PayController.getInstance().isDebug(),
+                return ConstantUtils.getUrl(PayController.getInstance().env(),
                         String.format(ConstantUtils.URL_PAY_RESULT, paramsBean.getOrderId()));
             }
 

@@ -27,7 +27,13 @@ public class ConstantUtils {
     public static String URL_PAY_RESULT = "/pay/%1$s/result";
 
     /*********获取api接口url***********/
-    public static String getUrl(boolean debug, String url) {
-        return debug ? "http://api.staging.smartstudy.com/sdk" + url : "api.smartstudy.com/sdk" + url;
+    public static String getUrl(String env, String url) {
+        if (env.equals("prod")) {
+            return "https://api.smartstudy.com/sdk" + url;
+        } else if (env.equals("sim")) {
+            return "http://api.staging.smartstudy.com/sdk" + url;
+        } else {
+            return "http://api.dev.smartstudy.com/sdk" + url;
+        }
     }
 }
