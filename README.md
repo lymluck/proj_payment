@@ -32,7 +32,7 @@
  * Gradle
   
         dependencies {
-             compile 'com.smartstudy:payment:1.0.4'
+             compile 'com.smartstudy:payment:1.0.5'
         }
         
  * Maven
