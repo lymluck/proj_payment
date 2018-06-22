@@ -6,8 +6,11 @@ import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.VisibleForTesting;
 
 import java.lang.ref.WeakReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 对原生Handler类进行封装
@@ -15,214 +18,370 @@ import java.lang.ref.WeakReference;
  */
 
 public class WeakHandler {
-    private final Callback mCallback;
+    // hard reference to Callback. We need to keep callback in memory
+    private final Handler.Callback mCallback;
     private final ExecHandler mExec;
-    private final ChainedRef mRunnables = new ChainedRef((Runnable) null);
+    private Lock mLock = new ReentrantLock();
+    @SuppressWarnings("ConstantConditions")
+    @VisibleForTesting
+    final ChainedRef mRunnables = new ChainedRef(mLock, null);
 
+    /**
+     * Default constructor associates this handler with the {@link Looper} for the
+     * current thread.
+     * <p>
+     * If this thread does not have a looper, this handler won't be able to receive messages
+     * so an exception is thrown.
+     */
     public WeakHandler() {
-        this.mCallback = null;
-        this.mExec = new ExecHandler();
+        mCallback = null;
+        mExec = new ExecHandler();
     }
 
-    public WeakHandler(@Nullable Callback callback) {
-        this.mCallback = callback;
-        this.mExec = new ExecHandler(new WeakReference(callback));
+    /**
+     * Constructor associates this handler with the {@link Looper} for the
+     * current thread and takes a callback interface in which you can handle
+     * messages.
+     * <p>
+     * If this thread does not have a looper, this handler won't be able to receive messages
+     * so an exception is thrown.
+     *
+     * @param callback The callback interface in which to handle messages, or null.
+     */
+    public WeakHandler(@Nullable Handler.Callback callback) {
+        // Hard referencing body
+        mCallback = callback;
+        // Weak referencing inside ExecHandler
+        mExec = new ExecHandler(new WeakReference<>(callback));
     }
 
+    /**
+     * Use the provided {@link Looper} instead of the default one.
+     *
+     * @param looper The looper, must not be null.
+     */
     public WeakHandler(@NonNull Looper looper) {
-        this.mCallback = null;
-        this.mExec = new ExecHandler(looper);
+        mCallback = null;
+        mExec = new ExecHandler(looper);
     }
 
-    public WeakHandler(@NonNull Looper looper, @NonNull Callback callback) {
-        this.mCallback = callback;
-        this.mExec = new ExecHandler(looper, new WeakReference(callback));
+    /**
+     * Use the provided {@link Looper} instead of the default one and take a callback
+     * interface in which to handle messages.
+     *
+     * @param looper   The looper, must not be null.
+     * @param callback The callback interface in which to handle messages, or null.
+     */
+    public WeakHandler(@NonNull Looper looper, @NonNull Handler.Callback callback) {
+        mCallback = callback;
+        mExec = new ExecHandler(looper, new WeakReference<>(callback));
     }
 
+    /**
+     * Causes the Runnable r to be added to the message queue.
+     * The runnable will be run on the thread to which this handler is
+     * attached.
+     *
+     * @param r The Runnable that will be executed.
+     * @return Returns true if the Runnable was successfully placed in to the
+     * message queue.  Returns false on failure, usually because the
+     * looper processing the message queue is exiting.
+     */
     public final boolean post(@NonNull Runnable r) {
-        return this.mExec.post(this.wrapRunnable(r));
+        return mExec.post(wrapRunnable(r));
     }
 
+    /**
+     * Causes the Runnable r to be added to the message queue, to be run
+     * at a specific time given by <var>uptimeMillis</var>.
+     * <b>The time-base is {@link android.os.SystemClock#uptimeMillis}.</b>
+     * The runnable will be run on the thread to which this handler is attached.
+     *
+     * @param r            The Runnable that will be executed.
+     * @param uptimeMillis The absolute time at which the callback should run,
+     *                     using the {@link android.os.SystemClock#uptimeMillis} time-base.
+     * @return Returns true if the Runnable was successfully placed in to the
+     * message queue.  Returns false on failure, usually because the
+     * looper processing the message queue is exiting.  Note that a
+     * result of true does not mean the Runnable will be processed -- if
+     * the looper is quit before the delivery time of the message
+     * occurs then the message will be dropped.
+     */
     public final boolean postAtTime(@NonNull Runnable r, long uptimeMillis) {
-        return this.mExec.postAtTime(this.wrapRunnable(r), uptimeMillis);
+        return mExec.postAtTime(wrapRunnable(r), uptimeMillis);
     }
 
+    /**
+     * Causes the Runnable r to be added to the message queue, to be run
+     * at a specific time given by <var>uptimeMillis</var>.
+     * <b>The time-base is {@link android.os.SystemClock#uptimeMillis}.</b>
+     * The runnable will be run on the thread to which this handler is attached.
+     *
+     * @param r            The Runnable that will be executed.
+     * @param uptimeMillis The absolute time at which the callback should run,
+     *                     using the {@link android.os.SystemClock#uptimeMillis} time-base.
+     * @return Returns true if the Runnable was successfully placed in to the
+     * message queue.  Returns false on failure, usually because the
+     * looper processing the message queue is exiting.  Note that a
+     * result of true does not mean the Runnable will be processed -- if
+     * the looper is quit before the delivery time of the message
+     * occurs then the message will be dropped.
+     * @see android.os.SystemClock#uptimeMillis
+     */
     public final boolean postAtTime(Runnable r, Object token, long uptimeMillis) {
-        return this.mExec.postAtTime(this.wrapRunnable(r), token, uptimeMillis);
+        return mExec.postAtTime(wrapRunnable(r), token, uptimeMillis);
     }
 
+    /**
+     * Causes the Runnable r to be added to the message queue, to be run
+     * after the specified amount of time elapses.
+     * The runnable will be run on the thread to which this handler
+     * is attached.
+     *
+     * @param r           The Runnable that will be executed.
+     * @param delayMillis The delay (in milliseconds) until the Runnable
+     *                    will be executed.
+     * @return Returns true if the Runnable was successfully placed in to the
+     * message queue.  Returns false on failure, usually because the
+     * looper processing the message queue is exiting.  Note that a
+     * result of true does not mean the Runnable will be processed --
+     * if the looper is quit before the delivery time of the message
+     * occurs then the message will be dropped.
+     */
     public final boolean postDelayed(Runnable r, long delayMillis) {
-        return this.mExec.postDelayed(this.wrapRunnable(r), delayMillis);
+        return mExec.postDelayed(wrapRunnable(r), delayMillis);
     }
 
+    /**
+     * Posts a message to an object that implements Runnable.
+     * Causes the Runnable r to executed on the next iteration through the
+     * message queue. The runnable will be run on the thread to which this
+     * handler is attached.
+     * <b>This method is only for use in very special circumstances -- it
+     * can easily starve the message queue, cause ordering problems, or have
+     * other unexpected side-effects.</b>
+     *
+     * @param r The Runnable that will be executed.
+     * @return Returns true if the message was successfully placed in to the
+     * message queue.  Returns false on failure, usually because the
+     * looper processing the message queue is exiting.
+     */
     public final boolean postAtFrontOfQueue(Runnable r) {
-        return this.mExec.postAtFrontOfQueue(this.wrapRunnable(r));
+        return mExec.postAtFrontOfQueue(wrapRunnable(r));
     }
 
+    /**
+     * Remove any pending posts of Runnable r that are in the message queue.
+     */
     public final void removeCallbacks(Runnable r) {
-        ChainedRef runnableRef = this.mRunnables.findForward(r);
-        if (runnableRef != null) {
-            this.mExec.removeCallbacks(runnableRef.wrapper);
+        final WeakRunnable runnable = mRunnables.remove(r);
+        if (runnable != null) {
+            mExec.removeCallbacks(runnable);
         }
-
     }
 
+    /**
+     * Remove any pending posts of Runnable <var>r</var> with Object
+     * <var>token</var> that are in the message queue.  If <var>token</var> is null,
+     * all callbacks will be removed.
+     */
     public final void removeCallbacks(Runnable r, Object token) {
-        ChainedRef runnableRef = this.mRunnables.findForward(r);
-        if (runnableRef != null) {
-            this.mExec.removeCallbacks(runnableRef.wrapper, token);
+        final WeakRunnable runnable = mRunnables.remove(r);
+        if (runnable != null) {
+            mExec.removeCallbacks(runnable, token);
         }
-
     }
 
-    public Message obtainMessage() {
-        return this.mExec.obtainMessage();
-    }
-
-    public Message obtainMessage(int what) {
-        return this.mExec.obtainMessage(what);
-    }
-
+    /**
+     * Pushes a message onto the end of the message queue after all pending messages
+     * before the current time. It will be received in callback,
+     * in the thread attached to this handler.
+     *
+     * @return Returns true if the message was successfully placed in to the
+     * message queue.  Returns false on failure, usually because the
+     * looper processing the message queue is exiting.
+     */
     public final boolean sendMessage(Message msg) {
-        return this.mExec.sendMessage(msg);
+        return mExec.sendMessage(msg);
     }
 
+    /**
+     * Sends a Message containing only the what value.
+     *
+     * @return Returns true if the message was successfully placed in to the
+     * message queue.  Returns false on failure, usually because the
+     * looper processing the message queue is exiting.
+     */
     public final boolean sendEmptyMessage(int what) {
-        return this.mExec.sendEmptyMessage(what);
+        return mExec.sendEmptyMessage(what);
     }
 
+    /**
+     * Sends a Message containing only the what value, to be delivered
+     * after the specified amount of time elapses.
+     *
+     * @return Returns true if the message was successfully placed in to the
+     * message queue.  Returns false on failure, usually because the
+     * looper processing the message queue is exiting.
+     * @see #sendMessageDelayed(android.os.Message, long)
+     */
     public final boolean sendEmptyMessageDelayed(int what, long delayMillis) {
-        return this.mExec.sendEmptyMessageDelayed(what, delayMillis);
+        return mExec.sendEmptyMessageDelayed(what, delayMillis);
     }
 
+    /**
+     * Sends a Message containing only the what value, to be delivered
+     * at a specific time.
+     *
+     * @return Returns true if the message was successfully placed in to the
+     * message queue.  Returns false on failure, usually because the
+     * looper processing the message queue is exiting.
+     * @see #sendMessageAtTime(android.os.Message, long)
+     */
     public final boolean sendEmptyMessageAtTime(int what, long uptimeMillis) {
-        return this.mExec.sendEmptyMessageAtTime(what, uptimeMillis);
+        return mExec.sendEmptyMessageAtTime(what, uptimeMillis);
     }
 
+    /**
+     * Enqueue a message into the message queue after all pending messages
+     * before (current time + delayMillis). You will receive it in
+     * callback, in the thread attached to this handler.
+     *
+     * @return Returns true if the message was successfully placed in to the
+     * message queue.  Returns false on failure, usually because the
+     * looper processing the message queue is exiting.  Note that a
+     * result of true does not mean the message will be processed -- if
+     * the looper is quit before the delivery time of the message
+     * occurs then the message will be dropped.
+     */
     public final boolean sendMessageDelayed(Message msg, long delayMillis) {
-        return this.mExec.sendMessageDelayed(msg, delayMillis);
+        return mExec.sendMessageDelayed(msg, delayMillis);
     }
 
+    /**
+     * Enqueue a message into the message queue after all pending messages
+     * before the absolute time (in milliseconds) <var>uptimeMillis</var>.
+     * <b>The time-base is {@link android.os.SystemClock#uptimeMillis}.</b>
+     * You will receive it in callback, in the thread attached
+     * to this handler.
+     *
+     * @param uptimeMillis The absolute time at which the message should be
+     *                     delivered, using the
+     *                     {@link android.os.SystemClock#uptimeMillis} time-base.
+     * @return Returns true if the message was successfully placed in to the
+     * message queue.  Returns false on failure, usually because the
+     * looper processing the message queue is exiting.  Note that a
+     * result of true does not mean the message will be processed -- if
+     * the looper is quit before the delivery time of the message
+     * occurs then the message will be dropped.
+     */
     public boolean sendMessageAtTime(Message msg, long uptimeMillis) {
-        return this.mExec.sendMessageAtTime(msg, uptimeMillis);
+        return mExec.sendMessageAtTime(msg, uptimeMillis);
     }
 
+    /**
+     * Enqueue a message at the front of the message queue, to be processed on
+     * the next iteration of the message loop.  You will receive it in
+     * callback, in the thread attached to this handler.
+     * <b>This method is only for use in very special circumstances -- it
+     * can easily starve the message queue, cause ordering problems, or have
+     * other unexpected side-effects.</b>
+     *
+     * @return Returns true if the message was successfully placed in to the
+     * message queue.  Returns false on failure, usually because the
+     * looper processing the message queue is exiting.
+     */
     public final boolean sendMessageAtFrontOfQueue(Message msg) {
-        return this.mExec.sendMessageAtFrontOfQueue(msg);
+        return mExec.sendMessageAtFrontOfQueue(msg);
     }
 
+    /**
+     * Remove any pending posts of messages with code 'what' that are in the
+     * message queue.
+     */
     public final void removeMessages(int what) {
-        this.mExec.removeMessages(what);
+        mExec.removeMessages(what);
     }
 
+    /**
+     * Remove any pending posts of messages with code 'what' and whose obj is
+     * 'object' that are in the message queue.  If <var>object</var> is null,
+     * all messages will be removed.
+     */
     public final void removeMessages(int what, Object object) {
-        this.mExec.removeMessages(what, object);
+        mExec.removeMessages(what, object);
     }
 
+    /**
+     * Remove any pending posts of callbacks and sent messages whose
+     * <var>obj</var> is <var>token</var>.  If <var>token</var> is null,
+     * all callbacks and messages will be removed.
+     */
     public final void removeCallbacksAndMessages(Object token) {
-        this.mExec.removeCallbacksAndMessages(token);
+        mExec.removeCallbacksAndMessages(token);
     }
 
+    /**
+     * Check if there are any pending posts of messages with code 'what' in
+     * the message queue.
+     */
     public final boolean hasMessages(int what) {
-        return this.mExec.hasMessages(what);
+        return mExec.hasMessages(what);
     }
 
+    /**
+     * Check if there are any pending posts of messages with code 'what' and
+     * whose obj is 'object' in the message queue.
+     */
     public final boolean hasMessages(int what, Object object) {
-        return this.mExec.hasMessages(what, object);
+        return mExec.hasMessages(what, object);
     }
 
     public final Looper getLooper() {
-        return this.mExec.getLooper();
+        return mExec.getLooper();
     }
 
-    private WeakRunnable wrapRunnable(Runnable r) {
-        ChainedRef hardRef = ChainedRef.obtain(r);
-        this.mRunnables.insertAbove(hardRef);
-        return hardRef.wrapper = new WeakRunnable(new WeakReference(r), new WeakReference(hardRef));
+    private WeakRunnable wrapRunnable(@NonNull Runnable r) {
+        //noinspection ConstantConditions
+        if (r == null) {
+            throw new NullPointerException("Runnable can't be null");
+        }
+        final ChainedRef hardRef = new ChainedRef(mLock, r);
+        mRunnables.insertAfter(hardRef);
+        return hardRef.wrapper;
     }
 
-    static class ChainedRef {
-        @Nullable
-        ChainedRef next;
-        @Nullable
-        ChainedRef prev;
-        @Nullable
-        Runnable runnable;
-        @Nullable
-        WeakRunnable wrapper;
-        @Nullable
-        static ChainedRef sPool;
-        static int sPoolSize;
-        static final int MAX_POOL_SIZE = 15;
+    private static class ExecHandler extends Handler {
+        private final WeakReference<Handler.Callback> mCallback;
 
-        public ChainedRef(Runnable r) {
-            this.runnable = r;
+        ExecHandler() {
+            mCallback = null;
         }
 
-        public void remove() {
-            if (this.prev != null) {
-                this.prev.next = this.next;
-            }
-
-            if (this.next != null) {
-                this.next.prev = this.prev;
-            }
-
-            this.prev = null;
-            this.runnable = null;
-            this.wrapper = null;
-            Class var1 = ChainedRef.class;
-            synchronized (ChainedRef.class) {
-                if (sPoolSize <= 15) {
-                    this.next = sPool;
-                    sPool = this;
-                    ++sPoolSize;
-                }
-            }
+        ExecHandler(WeakReference<Handler.Callback> callback) {
+            mCallback = callback;
         }
 
-        public void insertAbove(@NonNull ChainedRef candidate) {
-            if (this.next != null) {
-                this.next.prev = candidate;
-            }
-
-            candidate.next = this.next;
-            this.next = candidate;
-            candidate.prev = this;
+        ExecHandler(Looper looper) {
+            super(looper);
+            mCallback = null;
         }
 
-        @Nullable
-        public ChainedRef findForward(Runnable obj) {
-            for (ChainedRef curr = this; curr != null; curr = curr.next) {
-                if (curr.runnable != null) {
-                    if (curr.runnable.equals(obj)) {
-                        return curr;
-                    }
-                } else if (obj == null) {
-                    return curr;
-                }
-            }
-
-            return null;
+        ExecHandler(Looper looper, WeakReference<Handler.Callback> callback) {
+            super(looper);
+            mCallback = callback;
         }
 
-        public static ChainedRef obtain(Runnable r) {
-            ChainedRef result = null;
-            Class var2 = ChainedRef.class;
-            synchronized (ChainedRef.class) {
-                if (sPool != null) {
-                    result = sPool;
-                    sPool = sPool.next;
-                    --sPoolSize;
-                }
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            if (mCallback == null) {
+                return;
             }
-
-            if (result != null) {
-                result.runnable = r;
-                return result;
-            } else {
-                return new ChainedRef(r);
+            final Handler.Callback callback = mCallback.get();
+            if (callback == null) { // Already disposed
+                return;
             }
+            callback.handleMessage(msg);
         }
     }
 
@@ -231,54 +390,91 @@ public class WeakHandler {
         private final WeakReference<ChainedRef> mReference;
 
         WeakRunnable(WeakReference<Runnable> delegate, WeakReference<ChainedRef> reference) {
-            this.mDelegate = delegate;
-            this.mReference = reference;
+            mDelegate = delegate;
+            mReference = reference;
         }
 
         @Override
         public void run() {
-            Runnable delegate = (Runnable) this.mDelegate.get();
-            ChainedRef reference = (ChainedRef) this.mReference.get();
+            final Runnable delegate = mDelegate.get();
+            final ChainedRef reference = mReference.get();
             if (reference != null) {
                 reference.remove();
             }
-
             if (delegate != null) {
                 delegate.run();
             }
-
         }
     }
 
-    private static class ExecHandler extends Handler {
-        private final WeakReference<Callback> mCallback;
+    static class ChainedRef {
+        @Nullable
+        ChainedRef next;
+        @Nullable
+        ChainedRef prev;
+        @NonNull
+        final Runnable runnable;
+        @NonNull
+        final WeakRunnable wrapper;
 
-        ExecHandler() {
-            this.mCallback = null;
+        @NonNull
+        Lock lock;
+
+        public ChainedRef(@NonNull Lock lock, @NonNull Runnable r) {
+            this.runnable = r;
+            this.lock = lock;
+            this.wrapper = new WeakRunnable(new WeakReference<>(r), new WeakReference<>(this));
         }
 
-        ExecHandler(WeakReference<Callback> callback) {
-            this.mCallback = callback;
-        }
-
-        ExecHandler(Looper looper) {
-            super(looper);
-            this.mCallback = null;
-        }
-
-        ExecHandler(Looper looper, WeakReference<Callback> callback) {
-            super(looper);
-            this.mCallback = callback;
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            if (this.mCallback != null) {
-                Callback callback = (Callback) this.mCallback.get();
-                if (callback != null) {
-                    callback.handleMessage(msg);
+        public WeakRunnable remove() {
+            lock.lock();
+            try {
+                if (prev != null) {
+                    prev.next = next;
                 }
+                if (next != null) {
+                    next.prev = prev;
+                }
+                prev = null;
+                next = null;
+            } finally {
+                lock.unlock();
             }
+            return wrapper;
+        }
+
+        public void insertAfter(@NonNull ChainedRef candidate) {
+            lock.lock();
+            try {
+                if (this.next != null) {
+                    this.next.prev = candidate;
+                }
+
+                candidate.next = this.next;
+                this.next = candidate;
+                candidate.prev = this;
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        @Nullable
+        public WeakRunnable remove(Runnable obj) {
+            lock.lock();
+            try {
+                // Skipping head
+                ChainedRef curr = this.next;
+                while (curr != null) {
+                    if (curr.runnable == obj) {
+                        // We do comparison exactly how Handler does inside
+                        return curr.remove();
+                    }
+                    curr = curr.next;
+                }
+            } finally {
+                lock.unlock();
+            }
+            return null;
         }
     }
 }

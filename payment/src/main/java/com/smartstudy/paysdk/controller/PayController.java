@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
+import android.widget.Toast;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -20,7 +21,6 @@ import com.smartstudy.paysdk.callback.ServerResultCallback;
 import com.smartstudy.paysdk.enums.PayWay;
 import com.smartstudy.paysdk.model.PayModel;
 import com.smartstudy.paysdk.util.ConstantUtils;
-import com.smartstudy.paysdk.util.ToastUtils;
 import com.tencent.mm.opensdk.constants.ConstantsAPI;
 import com.tencent.mm.opensdk.modelpay.PayReq;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
@@ -28,6 +28,7 @@ import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 
 import java.util.Map;
 
+import static com.smartstudy.paysdk.util.ConstantUtils.PAY_REQUEST_ERR;
 import static com.smartstudy.paysdk.util.ConstantUtils.WECHAT_NOT_INSTALLED_ERR;
 import static com.smartstudy.paysdk.util.ConstantUtils.WECHAT_PAY_COMMAND;
 import static com.smartstudy.paysdk.util.ConstantUtils.WECHAT_PAY_RESULT_ACTION;
@@ -121,7 +122,8 @@ public class PayController {
         PayModel.requestPay(mPayWay, paramsBean, new Callback<String>() {
             @Override
             public void onErr(String msg) {
-                ToastUtils.shortToast(mContext, msg);
+                Toast.makeText(mContext, msg, Toast.LENGTH_SHORT).show();
+                onPayListener.onPayFailure(mPayWay, PAY_REQUEST_ERR);
             }
 
             @Override
@@ -133,7 +135,7 @@ public class PayController {
                             mSerial = wxData.getSerial();
                             goWXPay(wxData, onPayListener);
                         } else {
-                            ToastUtils.shortToast(mContext, ConstantUtils.GET_DATA_FAILED);
+                            Toast.makeText(mContext, ConstantUtils.GET_DATA_FAILED, Toast.LENGTH_SHORT).show();
                         }
                         break;
                     case ALiPay:
@@ -142,7 +144,7 @@ public class PayController {
                             mSerial = aliData.getSerial();
                             goAliPay(aliData, onPayListener);
                         } else {
-                            ToastUtils.shortToast(mContext, ConstantUtils.GET_DATA_FAILED);
+                            Toast.makeText(mContext, ConstantUtils.GET_DATA_FAILED, Toast.LENGTH_SHORT).show();
                         }
                         break;
                     default:
@@ -161,7 +163,8 @@ public class PayController {
         PayModel.verifyPayResult(paramsBean, mSerial, new Callback<String>() {
             @Override
             public void onErr(String msg) {
-                ToastUtils.shortToast(mContext, msg);
+                Toast.makeText(mContext, msg, Toast.LENGTH_SHORT).show();
+                callback.unPaid();
             }
 
             @Override
@@ -281,7 +284,7 @@ public class PayController {
     }
 
     /**
-     * 广播接收器
+     * 微信支付广播接收器
      */
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override

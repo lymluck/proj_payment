@@ -301,7 +301,7 @@ public class RequestServer {
     }
 
     /**
-     * 统一同意处理成功信息
+     * 统一处理成功信息
      *
      * @param result
      * @param callBack

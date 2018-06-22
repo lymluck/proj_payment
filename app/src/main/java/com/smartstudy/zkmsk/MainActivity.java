@@ -1,4 +1,4 @@
-package com.smartstudy.zhike;
+package com.smartstudy.zkmsk;
 
 import android.Manifest;
 import android.content.Context;
@@ -34,8 +34,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId()) {
             case R.id.weChat:
                 ZkPayPlatform.with(this)
-                        .orderId("20171242104638").setDebug(true)
-                        .pid("nmv99rf5eg").appVersion(getVersionName(this))
+                        .orderId("20180241827431").setDebug(true)
+                        .pid("1157prpyjw").appVersion(getVersionName(this))
                         .token("0nBRuNTHta96XEOHAT1pobV9aY6pmn6F")
                         .payway(PayWay.WXPay).productsName("托福100天")
                         .requestPay(new OnPayListener() {

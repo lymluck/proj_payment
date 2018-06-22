@@ -6,16 +6,34 @@ package com.smartstudy.paysdk.util;
 
 public class ConstantUtils {
 
-    //建立连接超时时间 5s
+    /**
+     * 建立连接超时时间 5s
+     */
     public static int CONNECTION_TIMEOUT = 5;
-    //读取超时 10s
+    /**
+     * 读取超时 10s
+     */
     public static int READ_TIMEOUT = 10;
-    //写入超时 30s
+    /**
+     * 写入超时 30s
+     */
     public static int WRITE_TIMEOUT = 30;
     public static final int ERR_OTHER = 99999;
+    /**
+     * 微信未安装
+     */
     public static final int WECHAT_NOT_INSTALLED_ERR = -5;
+    /**
+     * 微信版本不支持
+     */
     public static final int WECHAT_UNSUPPORT_ERR = -6;
-    //获取信息失败提示信息
+    /**
+     * 向服务器发起支付失败
+     */
+    public static final int PAY_REQUEST_ERR = -7;
+    /**
+     * 获取信息失败提示信息
+     */
     public static final String GET_DATA_FAILED = "获取数据失败,请稍候重试!";
     public static final String WECHAT_PAY_RESULT_ACTION = "com.tencent.mm.opensdk.WECHAT_PAY_RESULT_ACTION";
     public static final String WECHAT_PAY_RESULT_EXTRA = "com.tencent.mm.opensdk.WECHAT_PAY_RESULT_EXTRA";
