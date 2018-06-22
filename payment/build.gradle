@@ -4,10 +4,10 @@ apply plugin: 'com.novoda.bintray-release'
 def sdkVs = "1.0.4"
 
 android {
-    compileSdkVersion 26
+    compileSdkVersion 27
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 26
+        targetSdkVersion 27
 
     }
 
@@ -28,7 +28,7 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.squareup.okhttp3:okhttp:3.+'
-    compile 'com.android.support:appcompat-v7:+'
+    compile 'com.android.support:appcompat-v7:27.+'
     compile 'com.alibaba:fastjson:1.1.67.android'
     compile 'com.tencent.mm.opensdk:wechat-sdk-android-without-mta:+'
     compile files('libs/alipaySdk-20170922.jar')
