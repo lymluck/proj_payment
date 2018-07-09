@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'com.novoda.bintray-release'
 
-def sdkVs = "1.0.4"
+def sdkVs = "1.0.6"
 
 android {
     compileSdkVersion 27
@@ -26,12 +26,12 @@ android {
 }
 
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.squareup.okhttp3:okhttp:3.+'
-    compile 'com.android.support:appcompat-v7:27.+'
-    compile 'com.alibaba:fastjson:1.1.67.android'
-    compile 'com.tencent.mm.opensdk:wechat-sdk-android-without-mta:+'
-    compile files('libs/alipaySdk-20170922.jar')
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'com.squareup.okhttp3:okhttp:3.+'
+    implementation 'com.android.support:appcompat-v7:27.+'
+    implementation 'com.alibaba:fastjson:1.1.67.android'
+    implementation 'com.tencent.mm.opensdk:wechat-sdk-android-without-mta:+'
+    implementation files('libs/alipaySdk-20170922.jar')
 }
 
 //add

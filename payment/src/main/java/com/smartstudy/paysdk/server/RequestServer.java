@@ -308,14 +308,17 @@ public class RequestServer {
      * @param <T>
      */
     private <T> void successCallBack(final T result, final Callback<T> callBack) {
-        okHttpHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (callBack != null) {
-                    callBack.onSuccess(result);
+        // 修复“sending message to a Handler on a dead thread”
+        if (okHttpHandler.getLooper().getThread().isAlive()) {
+            okHttpHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (callBack != null) {
+                        callBack.onSuccess(result);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     /**
@@ -326,14 +329,17 @@ public class RequestServer {
      * @param <T>
      */
     private <T> void failedCallBack(final String errorMsg, final Callback<T> callBack) {
-        okHttpHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (callBack != null) {
-                    callBack.onErr(errorMsg);
+        // 修复“sending message to a Handler on a dead thread”
+        if (okHttpHandler.getLooper().getThread().isAlive()) {
+            okHttpHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (callBack != null) {
+                        callBack.onErr(errorMsg);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     private SSLSocketFactory initSSLSocketFactory() {
@@ -341,9 +347,9 @@ public class RequestServer {
         try {
             sslContext = SSLContext.getInstance("SSL");
             X509TrustManager[] xTrustArray = new X509TrustManager[]
-                    {initTrustManager()};
+                {initTrustManager()};
             sslContext.init(null,
-                    xTrustArray, new SecureRandom());
+                xTrustArray, new SecureRandom());
         } catch (Exception e) {
             e.printStackTrace();
         }
